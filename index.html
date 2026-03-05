@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Variable Architect | Master the Machine</title>
+    <style>
+        :root {
+            --bg: #0b0e14;
+            --sidebar: #151921;
+            --primary: #4f46e5;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --text-main: #f3f4f6;
+            --text-dim: #9ca3af;
+        }
+
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui; background: var(--bg); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+
+        /* Sidebar Navigation */
+        nav { width: 280px; background: var(--sidebar); border-right: 1px solid #2d3748; display: flex; flex-direction: column; padding: 20px; }
+        .logo { font-size: 1.4rem; font-weight: 800; color: var(--primary); margin-bottom: 30px; letter-spacing: -1px; }
+        
+        .nav-group { margin-bottom: 25px; }
+        .nav-label { font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; display: block; }
+        .level-link { 
+            padding: 10px 15px; border-radius: 8px; cursor: pointer; transition: 0.2s; margin-bottom: 4px;
+            font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center;
+        }
+        .level-link:hover { background: rgba(255,255,255,0.05); }
+        .level-link.active { background: var(--primary); color: white; }
+        .lock-icon { font-size: 0.8rem; opacity: 0.5; }
+
+        /* Main Workspace */
+        main { flex: 1; padding: 40px; display: flex; flex-direction: column; overflow-y: auto; }
+        
+        /* Stats HUD */
+        .top-hud { display: flex; gap: 30px; margin-bottom: 30px; padding: 15px 25px; background: rgba(255,255,255,0.03); border-radius: 12px; }
+        .hud-stat span { display: block; font-size: 0.75rem; color: var(--text-dim); }
+        .hud-stat b { font-size: 1.1rem; color: var(--primary); font-family: monospace; }
+
+        /* Level Content Area */
+        .card { background: #1a1f29; border: 1px solid #2d3748; border-radius: 16px; padding: 40px; max-width: 800px; box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
+        .math-viz { background: #000; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; font-family: 'serif'; border: 1px dashed #444; }
+        
+        .option-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 25px; }
+        .opt-btn { 
+            background: #252b37; border: 1px solid #374151; color: white; padding: 16px; border-radius: 10px; cursor: pointer;
+            text-align: left; transition: all 0.2s; font-size: 1rem;
+        }
+        .opt-btn:hover { border-color: var(--primary); transform: translateY(-2px); }
+
+        .skip-btn { margin-top: 30px; background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.85rem; padding: 5px; }
+        .skip-btn:hover { color: #ef4444; text-decoration: underline; }
+
+        /* Feedback */
+        .feedback { position: fixed; bottom: 30px; right: 30px; padding: 15px 25px; border-radius: 8px; display: none; animation: slideUp 0.3s; }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <nav id="sidebar">
+        <div class="logo">VARIABLE_LAB v2.0</div>
+        
+        <div class="nav-group">
+            <span class="nav-label">Part 1: The Algebraic Origin</span>
+            <div class="level-link active" onclick="loadLevel(0)">1.1 Unknown Constants <span>✔</span></div>
+            <div class="level-link" onclick="loadLevel(1)">1.2 Balancing Acts <span class="lock-icon">🔒</span></div>
+        </div>
+
+        <div class="nav-group">
+            <span class="nav-label">Part 2: Coding Schematics</span>
+            <div class="level-link" onclick="loadLevel(2)">2.1 Descriptive Naming <span class="lock-icon">🔒</span></div>
+            <div class="level-link" onclick="loadLevel(3)">2.2 The "Box" Metaphor <span class="lock-icon">🔒</span></div>
+        </div>
+
+        <div class="nav-group">
+            <span class="nav-label">Part 3: Advanced States</span>
+            <div class="level-link" onclick="loadLevel(4)">3.1 Boolean Toggles <span class="lock-icon">🔒</span></div>
+            <div class="level-link" onclick="loadLevel(5)">3.2 Function Inputs <span class="lock-icon">🔒</span></div>
+        </div>
+    </nav>
+
+    <main>
+        <div class="top-hud">
+            <div class="hud-stat"><span>TOTAL XP</span><b id="xp-val">0</b></div>
+            <div class="hud-stat"><span>CURRENT RANK</span><b id="rank-val">Novice</b></div>
+            <div class="hud-stat"><span>COMPLETION</span><b id="progress-val">0%</b></div>
+        </div>
+
+        <div class="card">
+            <h1 id="lvl-title">The Unknown Constant</h1>
+            <p id="lvl-desc" class="lesson-text" style="line-height:1.6; color: var(--text-dim);"></p>
+            <div id="math-viz" class="math-viz"></div>
+            
+            <div id="question-text" style="font-weight: bold; margin-bottom: 10px;"></div>
+            <div class="option-grid" id="option-grid"></div>
+
+            <button class="skip-btn" onclick="skipCurrent()">Skip Level (-25 XP)</button>
+        </div>
+    </main>
+
+    <div id="toast" class="feedback"></div>
+
+    <script>
+        const curriculum = [
+            { id: 0, title: "1.1 Unknown Constants", desc: "In Algebra, variables represent values that are fixed but unknown. Think of $x$ as a hidden treasure chest.", math: "x + 15 = 40", q: "Find the value of x.", opts: ["15", "25", "55", "30"], ans: "25", xp: 50 },
+            { id: 1, title: "1.2 Balancing Acts", desc: "If you change one side of an equation, you must change the other. Variables maintain this balance.", math: "2x = 100", q: "Divide both sides by 2 to isolate x.", opts: ["x = 10", "x = 200", "x = 50", "x = 0"], ans: "x = 50", xp: 75 },
+            { id: 2, title: "2.1 Descriptive Naming", desc: "Code is for humans. While algebra uses $x$, programming uses full words to avoid confusion.", math: "let playerHealth = 100;", q: "Which name is better for storing 'Current Speed'?", opts: ["s", "speed", "currentSpeed", "var1"], ans: "currentSpeed", xp: 100 },
+            { id: 3, title: "2.2 The 'Box' Metaphor", desc: "In coding, <code>=</code> is an 'Assignment' operator. It puts a value into a named container.", math: "let gold = 10;<br>gold = gold + 5;", q: "What is the final value of gold?", opts: ["5", "10", "15", "Error"], ans: "15", xp: 125 },
+            { id: 4, title: "3.1 Boolean Toggles", desc: "Boolean variables represent Binary Logic: True or False (1 or 0). They are like light switches.", math: "let isGameOver = false;", q: "If the player dies, what should isGameOver become?", opts: ["true", "false", "0", "null"], ans: "true", xp: 150 },
+            { id: 5, title: "3.2 Function Inputs", desc: "Functions use 'Parameters' as placeholders for data that will be passed in later.", math: "function square(n) { return n * n; }", q: "If we call square(4), what is n?", opts: ["n", "square", "4", "16"], ans: "4", xp: 200 }
+        ];
+
+        let state = { xp: 0, activeIdx: 0, unlocked: [0] };
+
+        function loadLevel(idx) {
+            if (!state.unlocked.includes(idx)) {
+                showToast("Level Locked! Complete previous tasks.", "var(--warning)");
+                return;
+            }
+            state.activeIdx = idx;
+            const lvl = curriculum[idx];
+            
+            // Update UI
+            document.getElementById('lvl-title').innerText = lvl.title;
+            document.getElementById('lvl-desc').innerHTML = lvl.desc;
+            document.getElementById('math-viz').innerHTML = `<h2 style="margin:0">${lvl.math}</h2>`;
+            document.getElementById('question-text').innerText = lvl.q;
+            
+            const grid = document.getElementById('option-grid');
+            grid.innerHTML = '';
+            lvl.opts.forEach(o => {
+                const btn = document.createElement('button');
+                btn.className = 'opt-btn';
+                btn.innerText = o;
+                btn.onclick = () => check(o);
+                grid.appendChild(btn);
+            });
+
+            // Update sidebar active state
+            document.querySelectorAll('.level-link').forEach((l, i) => {
+                l.classList.toggle('active', i === idx);
+            });
+        }
+
+        function check(choice) {
+            const lvl = curriculum[state.activeIdx];
+            if (choice === lvl.ans) {
+                state.xp += lvl.xp;
+                showToast(`Correct! +${lvl.xp} XP`, "var(--success)");
+                
+                const nextIdx = state.activeIdx + 1;
+                if (nextIdx < curriculum.length) {
+                    if (!state.unlocked.includes(nextIdx)) state.unlocked.push(nextIdx);
+                    updateSidebar();
+                    setTimeout(() => loadLevel(nextIdx), 1000);
+                } else {
+                    document.querySelector('.card').innerHTML = "<h1>🎓 GRANDMASTER ARCHITECT</h1><p>Curriculum Complete.</p>";
+                }
+                updateHUD();
+            } else {
+                showToast("Logic Error. Re-calculate.", "var(--warning)");
+            }
+        }
+
+        function skipCurrent() {
+            state.xp = Math.max(0, state.xp - 25);
+            const nextIdx = state.activeIdx + 1;
+            if (nextIdx < curriculum.length) {
+                if (!state.unlocked.includes(nextIdx)) state.unlocked.push(nextIdx);
+                updateSidebar();
+                loadLevel(nextIdx);
+            }
+            updateHUD();
+        }
+
+        function updateSidebar() {
+            const links = document.querySelectorAll('.level-link');
+            links.forEach((l, i) => {
+                if (state.unlocked.includes(i)) {
+                    l.querySelector('span').innerText = "✔";
+                    l.querySelector('span').classList.remove('lock-icon');
+                }
+            });
+        }
+
+        function updateHUD() {
+            document.getElementById('xp-val').innerText = state.xp;
+            document.getElementById('progress-val').innerText = Math.round((state.unlocked.length / curriculum.length) * 100) + "%";
+            if (state.xp > 300) document.getElementById('rank-val').innerText = "Developer";
+            if (state.xp > 600) document.getElementById('rank-val').innerText = "Architect";
+        }
+
+        function showToast(msg, color) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.background = color;
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 2000);
+        }
+
+        loadLevel(0);
+        updateHUD();
+    </script>
+</body>
+</html>
